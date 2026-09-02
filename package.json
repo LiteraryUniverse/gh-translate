@@ -1,0 +1,35 @@
+{
+	"name": "formatted-translator",
+	"version": "0.1.0",
+	"description": "Minimal translation web app for FormatJS/ICU JSON locale files with GitHub as the only store",
+	"license": "MIT",
+	"private": true,
+	"sideEffects": false,
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"check": "tsc --noEmit",
+		"test": "vitest run",
+		"deploy": "npm run build && wrangler deploy",
+		"cf-typegen": "wrangler types",
+		"postinstall": "WRANGLER_LOG=warn wrangler types > /dev/null 2>&1 || true"
+	},
+	"dependencies": {
+		"@formatjs/icu-messageformat-parser": "^2.11.0",
+		"@tanstack/solid-router": "^1.170.30",
+		"@tanstack/solid-start": "^1.168.47",
+		"intl-messageformat": "^10.7.0",
+		"marked": "^16.0.0",
+		"solid-js": "^1.9.10"
+	},
+	"devDependencies": {
+		"@cloudflare/vite-plugin": "^1.29.0",
+		"@types/node": "^22.5.4",
+		"typescript": "^5.9.0",
+		"vite": "^8.0.14",
+		"vite-plugin-solid": "^2.11.11",
+		"vitest": "^3.2.0",
+		"wrangler": "^4.74.0"
+	}
+}

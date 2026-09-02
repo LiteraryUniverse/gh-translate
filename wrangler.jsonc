@@ -1,0 +1,16 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "formatted-translator",
+	"compatibility_date": "2026-08-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"main": "@tanstack/solid-start/server-entry",
+	"vars": {
+		// Target repository: flat <locale>/<module>.json layout, monolingual, source locale = en.
+		"GITHUB_REPO": "LiteraryUniverse/intl-web",
+		"GITHUB_BRANCH": "master",
+		"SOURCE_LOCALE": "en"
+	}
+	// Secrets (wrangler secret put / .dev.vars):
+	//   GITHUB_APP_ID, GITHUB_APP_PRIVATE_KEY (PKCS8!), GITHUB_OAUTH_CLIENT_ID,
+	//   GITHUB_OAUTH_CLIENT_SECRET, SESSION_SECRET
+}

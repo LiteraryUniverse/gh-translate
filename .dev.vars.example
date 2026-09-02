@@ -1,0 +1,8 @@
+# Copy to .dev.vars for local development. Never commit .dev.vars.
+GITHUB_APP_ID=123456
+# Convert the downloaded key first: openssl pkcs8 -topk8 -inform PEM -nocrypt -in app.pem
+# then paste it as one line with \n escapes, wrapped in quotes.
+GITHUB_APP_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+GITHUB_OAUTH_CLIENT_ID=Iv1.abc
+GITHUB_OAUTH_CLIENT_SECRET=secret
+SESSION_SECRET=at-least-32-characters-of-randomness
