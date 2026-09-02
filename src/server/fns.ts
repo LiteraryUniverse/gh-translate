@@ -22,7 +22,53 @@ export type RepoInfo = {
 
 export const sessionUserFn = createServerFn().handler(async () => getSessionUser())
 
+const REPO_INFO_TTL_MS = 60_000
+const repoInfoCacheRequest = (): Request =>
+	new Request(`https://formatted-translator.internal/repo-info/${env.GITHUB_REPO}/${env.GITHUB_BRANCH}`)
+
+let repoInfoMemory: { info: RepoInfo; expiresAt: number } | null = null
+
+const repoInfoStore = (): Promise<Cache> => caches.open('formatted-translator')
+
+const readRepoInfoCache = async (): Promise<RepoInfo | null> => {
+	if (repoInfoMemory && Date.now() < repoInfoMemory.expiresAt) return repoInfoMemory.info
+	try {
+		const hit = await (await repoInfoStore()).match(repoInfoCacheRequest())
+		if (!hit) return null
+		const info = (await hit.json()) as RepoInfo
+		repoInfoMemory = { info, expiresAt: Date.now() + REPO_INFO_TTL_MS }
+		return info
+	} catch {
+		return null
+	}
+}
+
+const writeRepoInfoCache = async (info: RepoInfo): Promise<void> => {
+	repoInfoMemory = { info, expiresAt: Date.now() + REPO_INFO_TTL_MS }
+	try {
+		await (await repoInfoStore()).put(
+			repoInfoCacheRequest(),
+			new Response(JSON.stringify(info), {
+				headers: { 'Content-Type': 'application/json', 'Cache-Control': 'max-age=60' },
+			}),
+		)
+	} catch {
+		// Cache API is optional (some local/test runtimes); memory still holds.
+	}
+}
+
+const bustRepoInfoCache = async (): Promise<void> => {
+	repoInfoMemory = null
+	try {
+		await (await repoInfoStore()).delete(repoInfoCacheRequest())
+	} catch {
+		// ignore
+	}
+}
+
 export const repoInfoFn = createServerFn().handler(async (): Promise<RepoInfo> => {
+	const cached = await readRepoInfoCache()
+	if (cached) return cached
 	const head = await getHeadSha()
 	const token = await installationTokenOrNull()
 	const tree = await ghJson<{ tree: Array<{ path: string; type: string }> }>(
@@ -41,7 +87,7 @@ export const repoInfoFn = createServerFn().handler(async (): Promise<RepoInfo> =
 		.filter((module) => module !== 'index')
 		.sort()
 	const rosterRaw = await getRawFile(head, 'translators.json')
-	return {
+	const info: RepoInfo = {
 		repo: env.GITHUB_REPO,
 		branch: env.GITHUB_BRANCH,
 		head,
@@ -50,6 +96,8 @@ export const repoInfoFn = createServerFn().handler(async (): Promise<RepoInfo> =
 		modules,
 		roster: rosterRaw ? (JSON.parse(rosterRaw) as Roster) : null,
 	}
+	await writeRepoInfoCache(info)
+	return info
 })
 
 export const wikiPageFn = createServerFn()
@@ -121,5 +169,6 @@ export const saveTranslationsFn = createServerFn({ method: 'POST' })
 			message: () => `${locale}: ${saved} string${saved === 1 ? '' : 's'} (${touched.join(', ')}) via Formatted Translator`,
 			author: { name: user.name || user.login, email: `${user.id}+${user.login}@users.noreply.github.com` },
 		})
+		if (result) await bustRepoInfoCache()
 		return { sha: result?.sha ?? null, url: result?.url ?? null, saved: result ? saved : 0 }
 	})

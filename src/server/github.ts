@@ -1,3 +1,4 @@
+import { formatGithubHttpError, isPkcs1Key, looksLikeAppKey } from '~/lib/appCredentials'
 import { env } from './env'
 
 const API = 'https://api.github.com'
@@ -44,7 +45,16 @@ export const ghFetch = async (path: string, token: string | null, init: RequestI
 
 export const ghJson = async <T>(path: string, token: string | null, init: RequestInit = {}): Promise<T> => {
 	const res = await ghFetch(path, token, init)
-	if (!res.ok) throw new Error(`GitHub ${init.method ?? 'GET'} ${path} → ${res.status}: ${(await res.text()).slice(0, 300)}`)
+	if (!res.ok)
+		throw new Error(
+			formatGithubHttpError({
+				method: init.method ?? 'GET',
+				path,
+				status: res.status,
+				body: await res.text(),
+				authenticated: Boolean(token),
+			}),
+		)
 	return res.json() as Promise<T>
 }
 
@@ -67,16 +77,20 @@ export const installationToken = async (): Promise<string> => {
 }
 
 /**
- * Reads work without the GitHub App too (public repo, unauthenticated rate
- * limits apply) so local dev and read-only browsing need no credentials.
+ * Installation token when a real App key is configured. Dummy .dev.vars keys
+ * skip this so local read-only browsing can use unauthenticated REST.
+ * Cloudflare Worker IPs share GitHub's 60/hr unauthenticated quota — if a
+ * real key is present, minting must succeed rather than silently falling back.
  */
 export const installationTokenOrNull = async (): Promise<string | null> => {
-	try {
-		return await installationToken()
-	} catch (error) {
-		console.warn('No GitHub App installation token — falling back to unauthenticated reads:', error)
-		return null
+	const pem = env.GITHUB_APP_PRIVATE_KEY ?? ''
+	if (isPkcs1Key(pem)) {
+		throw new Error(
+			'GITHUB_APP_PRIVATE_KEY is PKCS#1; convert to PKCS#8 with `openssl pkcs8 -topk8 -inform PEM -nocrypt` (see docs/DEPLOYMENT.md)',
+		)
 	}
+	if (!env.GITHUB_APP_ID || !looksLikeAppKey(pem)) return null
+	return installationToken()
 }
 
 /** Current head commit sha of the configured branch. */

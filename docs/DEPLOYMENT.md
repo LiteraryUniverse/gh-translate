@@ -161,5 +161,5 @@ A typo in a page name or heading silently orphans the note — the app shows
 | "GitHub App is not installed on …" | Install the App on the account owning `GITHUB_REPO` |
 | Sign-in loops to `/?login=failed` | Callback URL mismatch, wrong client ID/secret, or clock skew; check the Worker logs (`wrangler tail`) |
 | "not on the roster" when saving | Add the GitHub login to `translators.json` (or delete the file to open translation up) |
-| Slow/failing reads while logged out locally | Unauthenticated GitHub API rate limit (60/hr/IP) — configure real App credentials |
+| Slow/failing reads, or `GitHub unauthenticated rate limit` | Cloudflare Worker IPs share GitHub's 60 unauthenticated requests/hour. Set real App secrets (`GITHUB_APP_ID` + PKCS#8 `GITHUB_APP_PRIVATE_KEY`) so reads use the installation token. Dummy `.dev.vars` keys are only for local browsing from your own IP. |
 | Save fails with per-key ICU errors | The translation drops a `{placeholder}` the source has, adds an unknown one, or has broken ICU syntax — the error names the key |
