@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/solid-router'
 import { For, Show } from 'solid-js'
 import { createClientData } from '~/lib/clientData'
+import { blobUrl } from '~/lib/githubUrls'
 import { flattenMessages, isEditableTree } from '~/lib/messages'
 import { fetchModuleTree } from '~/lib/repoFiles'
 import type { ModuleInfo } from '~/lib/types'
@@ -67,7 +68,18 @@ function ModuleList() {
 							{(m) => (
 								<tr>
 									<td>
-										<Show when={m.editable} fallback={<span>{m.module} <span class="badge ro">GitHub only</span></span>}>
+										<Show
+											when={m.editable}
+											fallback={
+												<a
+													href={blobUrl(info().repo, info().branch, `${params().locale}/${m.module}.json`)}
+													target="_blank"
+													rel="noreferrer"
+												>
+													{m.module} <span class="badge ro">GitHub only</span>
+												</a>
+											}
+										>
 											<Link to="/l/$locale/$module" params={{ locale: params().locale, module: m.module }}>
 												{m.module}
 											</Link>

@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/solid-router'
 import { For, Show } from 'solid-js'
+import { commitUrl, repoUrl } from '~/lib/githubUrls'
 import { repoInfoFn } from '~/server/fns'
 
 export const Route = createFileRoute('/')({
@@ -28,7 +29,14 @@ function LocaleIndex() {
 			</Show>
 			<h1>
 				Locales <small>
-					{targets().length} targets · source {info().sourceLocale} · {info().repo}@{info().head.slice(0, 8)}
+					{targets().length} targets · source {info().sourceLocale} ·{' '}
+					<a href={repoUrl(info().repo)} target="_blank" rel="noreferrer">
+						{info().repo}
+					</a>
+					@
+					<a href={commitUrl(info().repo, info().head)} target="_blank" rel="noreferrer">
+						{info().head.slice(0, 8)}
+					</a>
 				</small>
 			</h1>
 			<div class="grid">

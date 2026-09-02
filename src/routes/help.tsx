@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/solid-router'
 import { Show } from 'solid-js'
 import { Markdown } from '~/components/Markdown'
+import { wikiPageUrl } from '~/lib/githubUrls'
 import { repoInfoFn, wikiPageFn } from '~/server/fns'
 
 export const Route = createFileRoute('/help')({
@@ -15,14 +16,24 @@ function HelpPage() {
 	const data = Route.useLoaderData()
 	return (
 		<main>
-			<h1>Translator guide</h1>
+			<h1>
+				Translator guide{' '}
+				<small>
+					<a href={wikiPageUrl(data().info.repo)} target="_blank" rel="noreferrer">
+						{data().info.repo} wiki
+					</a>
+				</small>
+			</h1>
 			<Show
 				when={data().home}
 				fallback={
 					<p class="notice info">
 						No wiki Home page yet — write one at{' '}
-						<a href={`https://github.com/${data().info.repo}/wiki`}>the project wiki</a>. Context for individual
-						strings lives on one wiki page per module, under a <code>## full.message.key</code> heading.
+						<a href={wikiPageUrl(data().info.repo)} target="_blank" rel="noreferrer">
+							the project wiki
+						</a>
+						. Context for individual strings lives on one wiki page per module, under a{' '}
+						<code>## full.message.key</code> heading.
 					</p>
 				}
 			>

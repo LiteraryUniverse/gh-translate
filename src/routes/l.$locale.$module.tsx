@@ -4,6 +4,7 @@ import { createStore, reconcile } from 'solid-js/store'
 import { Markdown } from '~/components/Markdown'
 import { Preview } from '~/components/Preview'
 import { countDrafts, loadDrafts, storeDrafts, type LocaleDrafts } from '~/lib/drafts'
+import { blobUrl, commitUrl, wikiEditUrl, wikiPageUrl } from '~/lib/githubUrls'
 import { getArgSpecs, validateTranslation } from '~/lib/icu'
 import { flattenMessages, isEditableTree } from '~/lib/messages'
 import { fetchModuleTree } from '~/lib/repoFiles'
@@ -24,7 +25,30 @@ export const Route = createFileRoute('/l/$locale/$module')({
 	component: Editor,
 })
 
-type Notice = { kind: 'ok' | 'err'; text: string }
+type Notice = { kind: 'ok'; saved: number; sha: string | null } | { kind: 'err'; text: string }
+
+function NoticeBanner(props: { notice: Notice; repo: string }) {
+	const ok = () => (props.notice.kind === 'ok' ? props.notice : null)
+	return (
+		<Show when={ok()} fallback={<p class="notice err">{props.notice.kind === 'err' ? props.notice.text : ''}</p>}>
+			{(saved) => (
+				<p class="notice ok">
+					<Show when={saved().sha} fallback="Nothing to save — drafts matched what is already published.">
+						{(hash) => (
+							<>
+								Saved {saved().saved} string{saved().saved === 1 ? '' : 's'} in commit{' '}
+								<a href={commitUrl(props.repo, hash())} target="_blank" rel="noreferrer">
+									{hash().slice(0, 8)}
+								</a>
+								.
+							</>
+						)}
+					</Show>
+				</p>
+			)}
+		</Show>
+	)
+}
 
 function Editor() {
 	const params = Route.useParams()
@@ -82,12 +106,7 @@ function Editor() {
 			const result = await saveTranslationsFn({ data: { locale: params().locale, drafts: payload } })
 			storeDrafts(params().locale, {})
 			setDrafts(reconcile({}))
-			setNotice({
-				kind: 'ok',
-				text: result.sha
-					? `Saved ${result.saved} string${result.saved === 1 ? '' : 's'} in commit ${result.sha.slice(0, 8)}.`
-					: 'Nothing to save — drafts matched what is already published.',
-			})
+			setNotice({ kind: 'ok', saved: result.saved, sha: result.sha })
 			await router.invalidate()
 		} catch (error) {
 			setNotice({ kind: 'err', text: error instanceof Error ? error.message : String(error) })
@@ -95,14 +114,23 @@ function Editor() {
 			setSaving(false)
 		}
 	}
-	const wikiUrl = () => `https://github.com/${data().info.repo}/wiki/${params().module}`
+	const wikiHref = () => wikiPageUrl(data().info.repo, params().module)
+	const wikiEditHref = () => wikiEditUrl(data().info.repo, params().module)
+	const fileHref = () =>
+		blobUrl(data().info.repo, data().info.branch, `${params().locale}/${params().module}.json`)
 	return (
 		<main>
 			<h1>
 				<Link to="/l/$locale" params={{ locale: params().locale }}>
 					{params().locale}
 				</Link>{' '}
-				/ {params().module} <small>{Object.keys(flatSource()).length} strings</small>
+				/ {params().module}{' '}
+				<small>
+					{Object.keys(flatSource()).length} strings ·{' '}
+					<a href={wikiHref()} target="_blank" rel="noreferrer">
+						wiki
+					</a>
+				</small>
 			</h1>
 			<Show when={data().wiki?.intro}>{(intro) => <div class="notice info"><Markdown markdown={intro()} /></div>}</Show>
 			<Show when={!data().user}>
@@ -116,13 +144,13 @@ function Editor() {
 			<Show when={!fileEditable()}>
 				<p class="notice info">
 					This module contains non-string entries and cannot be edited here —{' '}
-					<a href={`https://github.com/${data().info.repo}/blob/${data().info.branch}/${params().locale}/${params().module}.json`}>
+					<a href={fileHref()} target="_blank" rel="noreferrer">
 						edit it on GitHub
 					</a>
 					.
 				</p>
 			</Show>
-			<Show when={notice()}>{(n) => <p class={`notice ${n().kind}`}>{n().text}</p>}</Show>
+			<Show when={notice()}>{(n) => <NoticeBanner notice={n()} repo={data().info.repo} />}</Show>
 			<div class="toolbar">
 				<div class="tabs">
 					<button type="button" class={filter() === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>
@@ -177,7 +205,7 @@ function Editor() {
 									<Show
 										when={context()}
 										fallback={
-											<a href={wikiUrl()} target="_blank" rel="noreferrer">
+											<a href={wikiHref()} target="_blank" rel="noreferrer">
 												Add context
 											</a>
 										}
@@ -194,7 +222,7 @@ function Editor() {
 									{(markdown) => (
 										<div class="context">
 											<Markdown markdown={markdown()} />
-											<a href={`${wikiUrl()}/_edit`} target="_blank" rel="noreferrer">
+											<a href={wikiEditHref()} target="_blank" rel="noreferrer">
 												Edit context
 											</a>
 										</div>

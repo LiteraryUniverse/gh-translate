@@ -50,6 +50,7 @@ a:hover { text-decoration: underline; }
 main { max-width: 76rem; margin: 0 auto; padding: 1.2rem; }
 h1 { font-size: 1.4rem; margin: 0.5rem 0 1rem; }
 h1 small { color: var(--muted); font-weight: 400; font-size: 0.9rem; }
+h1 small a { color: var(--accent); }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: 0.6rem; }
 .card {
 	background: var(--panel);
@@ -79,6 +80,7 @@ h1 small { color: var(--muted); font-weight: 400; font-size: 0.9rem; }
 .notice.ok { background: #e6f4ea; color: var(--ok); }
 .notice.err { background: #fdecea; color: var(--error); }
 .notice.info { background: #eef1f4; color: var(--muted); }
+.notice a { text-decoration: underline; }
 .row {
 	background: var(--panel);
 	border: 1px solid var(--line);
