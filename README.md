@@ -31,7 +31,10 @@ Workers. MIT licensed.
 - **Validation**: ICU syntax + placeholder parity against the source string,
   client-side as you type and re-enforced server-side before committing.
 - **Context**: GitHub Wiki, one page per module, one `## message.key` heading
-  per string; the wiki `Home` page doubles as the in-app Help page.
+  per string; the wiki `Home` page doubles as the in-app Help page. A
+  [General Translation keyed-metadata](https://generaltranslation.com/en-US/docs/cli/reference/keyed-metadata)
+  companion (`<source>/<module>.metadata.json`) is picked up automatically and
+  shown above the wiki notes.
 
 ## Documentation
 

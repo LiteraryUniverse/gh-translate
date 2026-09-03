@@ -7,7 +7,8 @@ import { countDrafts, loadDrafts, storeDrafts, type LocaleDrafts } from '~/lib/d
 import { blobUrl, commitUrl, wikiEditUrl, wikiPageUrl } from '~/lib/githubUrls'
 import { getArgSpecs, validateTranslation } from '~/lib/icu'
 import { flattenMessages, isEditableTree } from '~/lib/messages'
-import { fetchModuleTree } from '~/lib/repoFiles'
+import { flattenMetadata } from '~/lib/metadata'
+import { fetchModuleMetadata, fetchModuleTree } from '~/lib/repoFiles'
 import { canTranslate } from '~/lib/roster'
 import { splitWikiPage } from '~/lib/wiki'
 import { repoInfoFn, saveTranslationsFn, sessionUserFn, wikiPageFn } from '~/server/fns'
@@ -58,17 +59,19 @@ function Editor() {
 		() => ({ head: data().info.head, locale: params().locale, module: params().module }),
 		async ({ head, locale, module }) => {
 			const { repo, sourceLocale } = data().info
-			const [source, live] = await Promise.all([
+			const [source, live, meta] = await Promise.all([
 				fetchModuleTree({ repo, head, locale: sourceLocale, module }),
 				fetchModuleTree({ repo, head, locale, module }),
+				fetchModuleMetadata({ repo, head, locale: sourceLocale, module }),
 			])
-			return { source: source ?? {}, live: live ?? {} }
+			return { source: source ?? {}, live: live ?? {}, meta }
 		},
 	)
 	const [drafts, setDrafts] = createStore<LocaleDrafts>({})
 	onMount(() => setDrafts(reconcile(loadDrafts(params().locale))))
 	const flatSource = createMemo(() => flattenMessages(files()?.source ?? {}))
 	const flatLive = createMemo(() => flattenMessages(files()?.live ?? {}))
+	const flatMeta = createMemo(() => flattenMetadata(files()?.source ?? {}, files()?.meta))
 	const fileEditable = createMemo(() => !files() || (isEditableTree(files()?.source) && isEditableTree(files()?.live)))
 	const canEdit = createMemo(() => {
 		const user = data().user
@@ -178,6 +181,7 @@ function Editor() {
 								: undefined
 						const hasArgs = () => getArgSpecs(flatSource()[key]).length > 0
 						const context = () => data().wiki?.sections[key]
+						const meta = () => flatMeta()[key]
 						return (
 							<div class="row">
 								<div class="key">
@@ -203,7 +207,7 @@ function Editor() {
 										</button>
 									</Show>
 									<Show
-										when={context()}
+										when={context() || meta()}
 										fallback={
 											<a href={wikiHref()} target="_blank" rel="noreferrer">
 												Add context
@@ -218,15 +222,56 @@ function Editor() {
 								<Show when={openPanels()[key]?.preview}>
 									<Preview message={value() || flatSource()[key]} locale={params().locale} />
 								</Show>
-								<Show when={openPanels()[key]?.context && context()}>
-									{(markdown) => (
-										<div class="context">
-											<Markdown markdown={markdown()} />
-											<a href={wikiEditHref()} target="_blank" rel="noreferrer">
-												Edit context
-											</a>
-										</div>
-									)}
+								<Show when={openPanels()[key]?.context}>
+									<div class="context">
+										<Show when={meta()}>
+											{(m) => (
+												<div class="meta">
+													<Show when={m().context}>{(text) => <p>{text()}</p>}</Show>
+													<Show when={m().maxChars}>
+														{(max) => (
+															<p class="meta-limit">
+																Max {max()} characters (currently {value().length})
+															</p>
+														)}
+													</Show>
+													<For each={Object.entries(m().sourceCode ?? {})}>
+														{([file, snippets]) => (
+															<For each={snippets}>
+																{(snip) => (
+																	<pre class="meta-code">
+																		<span class="meta-file">{file}</span>
+																		{'\n'}
+																		{[snip.before, snip.target, snip.after].filter(Boolean).join('\n')}
+																	</pre>
+																)}
+															</For>
+														)}
+													</For>
+													<small class="meta-src">
+														From {params().module}.metadata.json
+													</small>
+												</div>
+											)}
+										</Show>
+										<Show
+											when={context()}
+											fallback={
+												<a href={wikiHref()} target="_blank" rel="noreferrer">
+													Add wiki context
+												</a>
+											}
+										>
+											{(markdown) => (
+												<>
+													<Markdown markdown={markdown()} />
+													<a href={wikiEditHref()} target="_blank" rel="noreferrer">
+														Edit context
+													</a>
+												</>
+											)}
+										</Show>
+									</div>
 								</Show>
 							</div>
 						)

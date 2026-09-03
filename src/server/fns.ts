@@ -84,7 +84,7 @@ export const repoInfoFn = createServerFn().handler(async (): Promise<RepoInfo> =
 		.map((entry) => entry.path)
 		.filter((path) => path.startsWith(`${env.SOURCE_LOCALE}/`) && path.endsWith('.json'))
 		.map((path) => path.slice(env.SOURCE_LOCALE.length + 1, -'.json'.length))
-		.filter((module) => module !== 'index')
+		.filter((module) => module !== 'index' && !module.endsWith('.metadata'))
 		.sort()
 	const rosterRaw = await getRawFile(head, 'translators.json')
 	const info: RepoInfo = {

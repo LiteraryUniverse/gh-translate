@@ -59,8 +59,10 @@ placeholder shows a red error, and such strings cannot be saved.
 A **Context** link under a string shows notes from the maintainers — where the
 text appears, screenshots, tone guidance. **Add context** / **Edit context**
 lead to the project wiki (one page per module, one `## message.key` heading per
-string) where anyone can improve the notes. The **Help** page in the header has
-project-wide guidance.
+string) where anyone can improve the notes. If the developers ship a
+`<module>.metadata.json` file (General Translation keyed metadata), its
+per-string instructions, character limits and code snippets appear first in the
+same panel. The **Help** page in the header has project-wide guidance.
 
 ## Drafts and saving
 

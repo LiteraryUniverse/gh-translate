@@ -115,6 +115,11 @@ h1 small a { color: var(--accent); }
 .preview-output { background: #f0f6f2; border-radius: 6px; padding: 0.4rem 0.6rem; white-space: pre-wrap; }
 .preview-error { color: var(--error); font-size: 0.85rem; }
 .context { border-top: 1px dashed var(--line); margin-top: 0.5rem; padding-top: 0.5rem; }
+.meta { margin-bottom: 0.6rem; }
+.meta p { margin: 0 0 0.3rem; white-space: pre-wrap; }
+.meta-limit, .meta-src { color: var(--muted); font-size: 0.85rem; }
+.meta-code { background: #f2f2f0; padding: 0.6rem; border-radius: 6px; overflow-x: auto; font-size: 0.8rem; margin: 0.3rem 0; }
+.meta-file { color: var(--muted); }
 .markdown img { max-width: 100%; }
 .markdown pre { background: #f2f2f0; padding: 0.6rem; border-radius: 6px; overflow-x: auto; }
 .savebar { position: sticky; bottom: 0; background: var(--panel); border-top: 1px solid var(--line); padding: 0.6rem 1.2rem; display: flex; gap: 0.8rem; align-items: center; }
