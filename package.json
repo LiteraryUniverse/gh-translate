@@ -3,6 +3,10 @@
 	"version": "0.1.0",
 	"description": "Minimal translation web app for FormatJS/ICU JSON locale files with GitHub as the only store",
 	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/LiteraryUniverse/gh-translate.git"
+	},
 	"private": true,
 	"sideEffects": false,
 	"type": "module",

@@ -5,6 +5,13 @@ Settled 2026-08-20 in a grilling session; every decision below is confirmed by t
 project owner. Agents: build exactly this — deviations need a new decision, not
 silent improvisation.
 
+> **Status (2026-09-07):** built and living in its own repository,
+> [`LiteraryUniverse/gh-translate`](https://github.com/LiteraryUniverse/gh-translate)
+> (extracted from the Literary Universe monorepo's `translate/` folder on
+> 2026-09-02). This file is the design record; the [build log](#build-log-2026-08-20)
+> at the bottom tracks what changed after the plan was written. For current
+> setup and usage, read the README and `docs/`.
+
 ## Product in one paragraph
 
 Translators log in with GitHub, pick a locale and module, edit strings in an
@@ -24,11 +31,11 @@ GitHub is the only persistent store. Deployed on Cloudflare Workers.
 | 5 | Storage: **GitHub is the only persistent store.** No KV, no D1. Sessions = encrypted cookie. Drafts = browser localStorage. Read cache = Cloudflare Cache API (ephemeral). |
 | 6 | Context notes: **GitHub Wiki** (text + images). Tool displays; editing happens on GitHub via deep links. Convention in Phase 4. |
 | 7 | MVP editor scope: locale → module → string list, **untranslated filter** (missing/empty key), search by key/source text, ICU preview + validation, context notes. **No "outdated" tracking** — untranslated only. No MT, no translation memory, no glossary highlighting, no review tiers. |
-| 8 | Home: monorepo folder `translate/`, zero imports from `app/`/`admin/`, history-extractable to its own repo later. Name: **Formatted Translator**. License: **MIT**. |
+| 8 | Home: started as monorepo folder `translate/` with zero imports from the Literary Universe apps; extracted to its own repo `LiteraryUniverse/gh-translate` on 2026-09-02. Name: **Formatted Translator**. License: **MIT**. |
 | 9 | Delivery stretch goal: Amendment B only — a consideration, not a phase. |
 | 10 | GitHub App does double duty: OAuth login for identity, installation token for writes. Commit **author = translator** (`Name <login@users.noreply.github.com>`), **committer = the App bot**. Translators need zero repo permissions. |
 | 11 | Sessions: encrypted httpOnly cookie (~2-week expiry), secret in Worker env. No server-side revocation (accepted ceiling; `ponytail:` comment it). **A logout route that clears the cookie must exist.** |
-| 12 | Reads: Cache API, ~60 s TTL, bust own entries after save. Cross-translator staleness up to ~60 s accepted. Save re-fetches live head and merges **at key level**; same-key concurrent edits are last-write-wins. |
+| 12 | Reads: **implemented better than planned** — the browser fetches message files sha-addressed from raw.githubusercontent.com at the head the server reports (public repo), so reads are exact and effectively fresh; no Cache API needed. Chosen over the planned 60 s server cache because Workers' 50-subrequest limit can't proxy 102 files. Save re-fetches live head and merges **at key level**; same-key concurrent edits are last-write-wins. Reads fall back to unauthenticated GitHub API when no App is configured. |
 | 13 | Wiki convention: one page per module, `## <full.message.key>` headings; `Home` page doubles as the tool's help page. |
 | 14 | License MIT; deploy = manual `wrangler deploy`; target repo/branch are plain config vars so the tool stays generic. |
 
@@ -53,7 +60,7 @@ GitHub is the only persistent store. Deployed on Cloudflare Workers.
 ## Phases (each independently hand-off-able)
 
 ### Phase 0 — Scaffold
-- `translate/` with its own `package.json` (not a monorepo workspace member), TanStack Start + SolidJS, Cloudflare Workers target, `wrangler.jsonc`.
+- Standalone `package.json` (originally in the monorepo's `translate/` folder, never a workspace member), TanStack Start + SolidJS, Cloudflare Workers target, `wrangler.jsonc`.
 - `LICENSE` (MIT), `README.md` stub, this `PLAN.md`, `CONTEXT.md`, `docs/adr/`.
 - Config as env vars: `GITHUB_REPO=LiteraryUniverse/intl-web`, `GITHUB_BRANCH=master`, `SOURCE_LOCALE=en`. Secrets via `wrangler secret`: `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`, `SESSION_SECRET`.
 - Dependencies: framework + `intl-messageformat` / `@formatjs/icu-messageformat-parser` are pre-approved. GitHub App auth = plain `fetch` + WebCrypto RS256 JWT (~20 lines) — **no Octokit** unless the hand-rolled path genuinely fails on Workers.
@@ -87,8 +94,8 @@ GitHub is the only persistent store. Deployed on Cloudflare Workers.
 - Loading/error states everywhere (GitHub down, rate-limited, validation failures with per-key messages).
 - Tests: vitest for merge/validation/roster/wiki-parsing; happy-path e2e optional, not required for v1.
 - README: setup (GitHub App registration walkthrough, wrangler secrets), config reference, screenshot.
-- Monorepo housekeeping **in the same PR**: amend `ai-kb/INTL_ARCHITECTURE.md` — Weblate flow replaced by Formatted Translator direct commits; submodule bump into `app/` stays manual; trs.literaryuniverse.com decommission note.
-- Manual `wrangler deploy`; no CI/CD for v1.
+- Consumer-side housekeeping (lives in the Literary Universe monorepo, not here): amend its `ai-kb/INTL_ARCHITECTURE.md` — Weblate flow replaced by Formatted Translator direct commits; submodule bump into `app/` stays manual; trs.literaryuniverse.com decommission note.
+- Manual `wrangler deploy`; CI runs tests/typecheck/build only (`.github/workflows/ci.yml`).
 
 ## Amendments (designed later, decided not-now)
 
@@ -120,6 +127,15 @@ secrets, repo-layout contract, roster, wiki conventions, troubleshooting) and
 restructured around them. `postinstall` typegen added so fresh clones typecheck;
 `/?login=failed` now shows feedback.
 
-Still open from Phase 5: register the App + deploy, seed the wiki Home page
-with the context convention, and the monorepo `ai-kb/INTL_ARCHITECTURE.md`
-amendment (rides in this feature's PR).
+**2026-09-02 — extracted to its own repository** (`LiteraryUniverse/gh-translate`).
+Post-extraction additions (see git log): GitHub deep links throughout the UI,
+App-credential detection with rate-limit-aware error messages (unauthenticated
+Worker IPs share GitHub's 60 req/h quota, so reads now use the installation
+token when configured), and support for a General Translation keyed-metadata
+companion file (`<source>/<module>.metadata.json`) rendered above wiki notes.
+CI workflow added 2026-09-07.
+
+Still open from Phase 5: confirm the live write path end to end (README
+"First-run checklist"), seed the wiki Home page with the context convention,
+and the consumer-side `ai-kb/INTL_ARCHITECTURE.md` rewrite in the Literary
+Universe monorepo once this replaces Weblate in practice.
