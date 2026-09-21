@@ -1,8 +1,11 @@
 import { defineConfig } from 'vitest/config'
 
-// Pure-logic tests only (src/lib) — nothing here may import 'cloudflare:workers'.
+// Server tests mock Worker bindings and GitHub requests.
 export default defineConfig({
+	resolve: {
+		tsconfigPaths: true,
+	},
 	test: {
-		include: ['src/lib/**/*.test.ts'],
+		include: ['src/lib/**/*.test.ts', 'src/server/**/*.test.ts'],
 	},
 })

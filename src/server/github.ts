@@ -89,7 +89,12 @@ export const installationTokenOrNull = async (): Promise<string | null> => {
 			'GITHUB_APP_PRIVATE_KEY is PKCS#1; convert to PKCS#8 with `openssl pkcs8 -topk8 -inform PEM -nocrypt` (see docs/DEPLOYMENT.md)',
 		)
 	}
-	if (!env.GITHUB_APP_ID || !looksLikeAppKey(pem)) return null
+	if (!looksLikeAppKey(pem)) return null
+	if (!env.GITHUB_APP_ID?.trim()) {
+		throw new Error(
+			'GITHUB_APP_ID is missing, but GITHUB_APP_PRIVATE_KEY is configured. Set GITHUB_APP_ID to the App ID from your GitHub App General settings in this Worker environment. GITHUB_OAUTH_CLIENT_ID alone does not configure App authentication.',
+		)
+	}
 	return installationToken()
 }
 
