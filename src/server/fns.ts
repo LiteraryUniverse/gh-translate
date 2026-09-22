@@ -110,6 +110,21 @@ export const wikiPageFn = createServerFn()
 		return res.ok ? res.text() : null
 	})
 
+const RAW_PATH_RE = /^[A-Za-z0-9-]{2,20}\/[A-Za-z0-9_-]{1,60}(\.metadata)?\.json$/
+const SHA_RE = /^[0-9a-f]{40}$/
+
+/**
+ * Fallback for repoFiles.ts: browsers fetch message files straight from
+ * raw.githubusercontent.com, but ad blockers drop URLs matching cookie-notice
+ * filters (e.g. `cookieconsent.json`). Only called when that direct fetch is blocked.
+ */
+export const rawFileFn = createServerFn()
+	.validator((input: { head: string; path: string }) => input)
+	.handler(async ({ data }): Promise<string | null> => {
+		if (!SHA_RE.test(data.head) || !RAW_PATH_RE.test(data.path)) return null
+		return getRawFile(data.head, data.path)
+	})
+
 export type SaveInput = { locale: string; drafts: Record<string, FlatMessages> }
 export type SaveResult = { sha: string | null; url: string | null; saved: number }
 
