@@ -22,7 +22,7 @@
 	"dependencies": {
 		"@formatjs/icu-messageformat-parser": "^3.5.20",
 		"@tanstack/solid-router": "^1.170.36",
-		"@tanstack/solid-start": "^1.168.54",
+		"@tanstack/solid-start": "^1.168.57",
 		"intl-messageformat": "^12.1.2",
 		"marked": "^18.0.13",
 		"solid-js": "^1.9.15"
